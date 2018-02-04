@@ -113,7 +113,7 @@ class RelayManager(object):
 
         # create heater relay instance
         self.__heater_relay__ = PowerRelay(
-            "heater_relay", configuration.heater_pin)
+            "heater_relay", configuration.relay_control_pin.get_int())
         self.__heater_queue__ = MPQueue()
 
         # create queue to hold heater timer.
@@ -185,7 +185,7 @@ class RelayManager(object):
         """
         self.__logger__.log_info_message("Starting the heater shutoff timer.")
         self.__heater_shutoff_timer__ = time.time(
-        ) + (self.__configuration__.max_minutes_to_run * 60)
+        ) + (self.__configuration__.max_heater_timer.get_int() * 60)
 
         return True
 

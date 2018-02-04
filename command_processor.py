@@ -125,7 +125,7 @@ class CommandProcessor(object):
         if phone_number is None:
             return False
 
-        for allowed_number in self.__configuration__.allowed_phone_numbers:
+        for allowed_number in self.__configuration__.allowed_phone_numbers.get_array():
             self.__logger__.log_info_message(
                 "Checking " + phone_number + " against " + allowed_number)
             # Handle phone numbers that start with "1"... sometimes
@@ -158,9 +158,9 @@ class CommandProcessor(object):
 
         self.__fona_manager__ = FonaManager(self.__logger__,
                                             serial_connection,
-                                            self.__configuration__.cell_power_status_pin,
-                                            self.__configuration__.cell_ring_indicator_pin,
-                                            self.__configuration__.utc_offset)
+                                            self.__configuration__.fona_power_status_pin.get_int(),
+                                            self.__configuration__.fona_ring_indicator_pin.get_int(),
+                                            self.__configuration__.utc_offset.get_int())
 
         # create heater relay instance
         self.__relay_controller__ = RelayManager(buddy_configuration, logger,
@@ -191,7 +191,7 @@ class CommandProcessor(object):
         # just deleting them and not processing them
         num_deleted = self.__fona_manager__.delete_messages()
         if num_deleted > 0:
-            for phone_number in self.__configuration__.allowed_phone_numbers:
+            for phone_number in self.__configuration__.allowed_phone_numbers.get_array():
                 self.__queue_message__(phone_number,
                                        "Old or unprocessed message(s) found on SIM Card."
                                        + " Deleting...")
@@ -248,7 +248,7 @@ class CommandProcessor(object):
         """
 
         if self.__sensors__.current_gas_sensor_reading is None \
-                or not self.__configuration__.is_mq2_enabled:
+                or not self.__sensors__.__gas_sensor__.enabled:
             return "Gas sensor NOT enabled."
 
         status_text = "Gas reading=" + \
@@ -275,7 +275,8 @@ class CommandProcessor(object):
         Gets how long the system has been up.
         """
 
-        uptime = (datetime.datetime.now() - self.__system_start_time__).total_seconds()
+        uptime = (datetime.datetime.now() -
+                  self.__system_start_time__).total_seconds()
         return utilities.get_time_text(uptime)
 
     def __get_light_status__(self):
@@ -283,7 +284,7 @@ class CommandProcessor(object):
         Classifies the hangar brightness.
         """
 
-        if self.__sensors__.current_light_sensor_reading is not None:
+        if self.__sensors__.current_light_sensor_reading is not None and self.__sensors__.current_light_sensor_reading.enabled:
             status = str(int(self.__sensors__.current_light_sensor_reading.lux)) + \
                 " LUX of light.\n"
             status += "Hangar is "
@@ -291,13 +292,13 @@ class CommandProcessor(object):
 
             # Determine the brightness
             if self.__sensors__.current_light_sensor_reading.lux <= \
-                    self.__configuration__.hangar_dark:
+                    self.__configuration__.hangar_dark_threshold.get_int():
                 brightness = "dark."
             elif self.__sensors__.current_light_sensor_reading.lux <= \
-                    self.__configuration__.hangar_dim:
+                    self.__configuration__.hangar_dim_threshold.get_int():
                 brightness = "dim."
             elif self.__sensors__.current_light_sensor_reading.lux <= \
-                    self.__configuration__.hangar_lit:
+                    self.__configuration__.hangar_lit_threshold.get_int():
                 brightness = "lit."
 
             status += brightness
@@ -373,7 +374,7 @@ class CommandProcessor(object):
         if self.__fona_manager__ is not None and phone_number is not None and message is not None:
             self.__logger__.log_info_message(
                 "MSG - " + phone_number + " : " + utilities.escape(message))
-            if not self.__configuration__.test_mode:
+            if not self.__configuration__.test_mode.get_bool():
                 self.__fona_manager__.send_message(phone_number, message)
 
             return True
@@ -385,7 +386,7 @@ class CommandProcessor(object):
         Puts a request to send a message to all numbers into the queue.
         """
 
-        for phone_number in self.__configuration__.allowed_phone_numbers:
+        for phone_number in self.__configuration__.allowed_phone_numbers.get_array():
             self.__queue_message__(phone_number, message)
 
         return message
@@ -417,7 +418,7 @@ class CommandProcessor(object):
 
         return CommandResponse(text.HEATER_ON_COMMAND,
                                "Heater turning on for "
-                               + str(self.__configuration__.max_minutes_to_run)
+                               + str(self.__configuration__.max_heater_timer.get_int())
                                + " minutes.")
 
     def __handle_off_request__(self, phone_number):
@@ -759,7 +760,8 @@ class CommandProcessor(object):
         cbc = self.__fona_manager__.battery_condition()
 
         self.__logger__.log_info_message("GSM Battery="
-                                         + str(cbc.get_percent_battery()) + "% Volts="
+                                         + str(cbc.get_percent_battery()
+                                               ) + "% Volts="
                                          + str(cbc.get_voltage()))
 
         if not cbc.is_battery_ok():
@@ -794,8 +796,8 @@ class CommandProcessor(object):
                 else:
                     self.__lcd_status_id__ += 1
             if self.__lcd_status_id__ == 3:
-                if  self.__sensors__.current_light_sensor_reading is not None \
-                        and  self.__sensors__.current_light_sensor_reading.enabled:
+                if self.__sensors__.current_light_sensor_reading is not None \
+                        and self.__sensors__.current_light_sensor_reading.enabled:
                     self.__lcd__.write_text(self.__get_light_status__())
                 else:
                     self.__lcd_status_id__ += 1
@@ -806,7 +808,8 @@ class CommandProcessor(object):
                     self.__lcd_status_id__ += 1
             if self.__lcd_status_id__ >= 5:
                 self.__lcd_status_id__ = -1
-                self.__lcd__.write_text("UPTIME:\n" + self.__get_uptime_status__())
+                self.__lcd__.write_text(
+                    "UPTIME:\n" + self.__get_uptime_status__())
         except:
             self.__lcd__.write(0, 0, "ERROR: LCD_ID=" +
                                str(self.__lcd_status_id__))
@@ -831,11 +834,11 @@ class CommandProcessor(object):
         while retries > 0 and serial_connection is None:
             try:
                 self.__logger__.log_info_message(
-                    "Opening on " + self.__configuration__.cell_serial_port)
+                    "Opening on " + self.__configuration__.fona_serial_port.get())
 
                 serial_connection = serial.Serial(
-                    self.__configuration__.cell_serial_port,
-                    self.__configuration__.cell_baud_rate)
+                    self.__configuration__.fona_serial_port.get(),
+                    self.__configuration__.fona_baud_rate.get())
             except:
                 self.__logger__.log_warning_message(
                     "SERIAL DEVICE NOT LOCATED."
@@ -912,20 +915,21 @@ class CommandProcessor(object):
             # in the order they were sent.
             # The order of reception by the GSM
             # chip can be out of order.
-            sorted_messages = sorted(messages, key=lambda message: message.sent_time)
+            sorted_messages = sorted(
+                messages, key=lambda message: message.sent_time)
 
             for message in sorted_messages:
                 messages_processed_count += 1
                 self.__fona_manager__.delete_message(message)
 
-                if message.minutes_waiting() > self.__configuration__.oldest_message:
+                if message.minutes_waiting() > self.__configuration__.maximum_message_age.get_int():
                     old_message = "MSG too old, " + \
                         str(message.minutes_waiting()) + " minutes old."
                     self.__queue_message_to_all_numbers__(old_message)
                     continue
 
-                delta_startup = (message.message_sent_time_utc() - \
-                                self.__system_start_time__).total_seconds()
+                delta_startup = (message.message_sent_time_utc() -
+                                 self.__system_start_time__).total_seconds()
                 if delta_startup < 0:
                     old_message = "MSG was sent " \
                                   + utilities.get_time_text(int(math.fabs(delta_startup))) \

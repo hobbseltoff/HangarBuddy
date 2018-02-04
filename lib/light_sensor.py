@@ -91,6 +91,9 @@ class LightSensor(object):
             self.set_gain(self.gain)
             self.disable()  # to be sure
             print "Enabled"
+
+            if local_debug.is_debug():
+                self.enabled = False
         except:
             print "Failed to initialize"
             self.enabled = False
@@ -250,19 +253,22 @@ class LightSensorResult(object):
         Reads the sensor and stores the results.
         """
 
-        try:
-            full, ir = tsl_sensor.get_full_luminosity()
-            lux = tsl_sensor.calculate_lux(full, ir)
+        self.full_spectrum = 0
+        self.infrared = 0
+        self.lux = 0
+        self.enabled = False
 
-            self.full_spectrum = full
-            self.infrared = ir
-            self.lux = lux
-            self.enabled = True
+        try:
+            if tsl_sensor.enabled:
+                full, ir = tsl_sensor.get_full_luminosity()
+                lux = tsl_sensor.calculate_lux(full, ir)
+
+                self.full_spectrum = full
+                self.infrared = ir
+                self.lux = lux
+                self.enabled = True
         except:
-            self.full_spectrum = 0
-            self.infrared = 0
-            self.lux = 0
-            self.enabled = False
+            pass
 
 
 if __name__ == '__main__':

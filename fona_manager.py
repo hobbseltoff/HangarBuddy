@@ -91,7 +91,7 @@ class FonaManager(object):
             results = self.__fona__.get_messages()
         except:
             exception_message = "ERROR fetching messages!"
-            print exception_message
+
             self.__logger__.log_warning_message(exception_message)
         self.__lock__.release()
 
@@ -109,7 +109,7 @@ class FonaManager(object):
             num_deleted = self.__fona__.delete_messages()
         except:
             exception_message = "ERROR deleting messages!"
-            print exception_message
+
             self.__logger__.log_warning_message(exception_message)
         self.__lock__.release()
 
@@ -125,7 +125,7 @@ class FonaManager(object):
             self.__fona__.delete_message(message_to_delete)
         except:
             exception_message = "ERROR deleting message!"
-            print exception_message
+
             self.__logger__.log_warning_message(exception_message)
         self.__lock__.release()
 
@@ -167,9 +167,7 @@ class FonaManager(object):
                     self.__update_signal_strength__()
                     signal_checked = True
         except:
-            exception_message = "ERROR updating signal & battery status!"
-            print exception_message
-            self.__logger__.log_warning_message(exception_message)
+            self.__logger__.log_warning_message("ERROR updating signal & battery status!")
 
         self.__lock__.release()
 
@@ -281,7 +279,6 @@ if __name__ == '__main__':
                                fona.TIMEZONE_OFFSET)
 
     if not FONA_MANAGER.is_power_on():
-        print "Power is off.."
         exit()
 
     BATTERY_CONDITION = FONA_MANAGER.battery_condition()
@@ -291,7 +288,6 @@ if __name__ == '__main__':
                               + "\nv:" + str(BATTERY_CONDITION.battery_voltage))
 
     SIGNAL_STRENGTH = FONA_MANAGER.signal_strength()
-    print "Signal:" + SIGNAL_STRENGTH.classify_strength()
 
     while True:
         BATTERY_CONDITION = FONA_MANAGER.battery_condition()

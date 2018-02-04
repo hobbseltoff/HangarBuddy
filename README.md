@@ -13,7 +13,7 @@ it has been extended and modified in a number of ways.
 1. Allow extensibility to add more features.
 1. Gas sensor is now sent through an analog converter so the exact gas level can be known.
 1. The gas sensor has a trigger level, and a lower "all clear" level so the alert will keep firing until the issue is addressed, but not spam your phone.
-1. The gas sensor will alert you to gas **__anytime__** it is detected, not just when the heater is being operated.
+1. The gas sensor will alert you to gas ****anytime**** it is detected, not just when the heater is being operated.
 1. A light sensor has been added so you can tell if you left the lights on.
 1. A temperature sensor has been added so you know if you need to turn on the heater.
 1. A LCD was added so you can position the unit and know what the signal quality is.
@@ -46,7 +46,7 @@ The commands are not case sensitive.
 | ON          | Turn the Relay/Heater on                      |
 | OFF         | Turn the Relay/Heater off                     |
 | STATUS      | Return status of the Relay/Heater (on or off) |
-| HELP        | Return the list of commands.         |
+| HELP        | Return the list of commands.                  |
 | SHUTDOWN    | Shutdown the Pi                               |
 
 ## Setup
@@ -117,7 +117,7 @@ For a complete set of installation instructions, visit
 
 **NOTE**: If you have the IO hat installed on the Pi, then you
 can use the duplicate SDA/SLC connectors on the set screw
-side __AND__ the connector pin side.
+side **AND** the connector pin side.
 
 * VCC (Red) to GPIO 3.3V
 * GND (Black) to GPIO Ground
@@ -151,9 +151,11 @@ any free SDA/SCL pins may be used.
 #### Enable analog-to-digital converter for the MQ-2 Gas Sensor
 
 To do this, you need to enable I2C and 1-Wire using `raspi-config`
+
 ```bash
 sudo raspi-config
 ```
+
 * Select Option 5 `Interfacing Options`
 * Select Option `P5 I2C` and enable
 * Select Option `P7 1-Wire` and enable
@@ -162,6 +164,7 @@ sudo raspi-config
 #### Enable the temperature sensor
 
 Modprobe two modules for the temperature sensor:
+
 ```bash
 sudo modprobe w1-gpio
 sudo modprobe w1-therm
@@ -183,7 +186,7 @@ GPIO pins, and an I2C bus.
 The LiPo battery is absolutely required and used directly by the GSM board.
 
 A MicroUSB to USB adapter is required for the modem to connect into the Pi
-Zero's ****only**** USB port.
+Zero's \***\*only\*\*** USB port.
 
 * [ ] [Raspberry Pi W, case, and IO pins](https://www.amazon.com/Raspberry-Starter-Power-Supply-Premium/dp/B0748MBFTS/ref=sr_1_3?s=electronics&ie=UTF8&qid=1512070820&sr=1-3&keywords=raspberry+pi+zero+pins)
 * [ ] [Adafruit GSM board, SMA edition](https://www.amazon.com/gp/product/B011P07916/ref=oh_aui_detailpage_o02_s00?ie=UTF8&psc=1)
@@ -254,6 +257,7 @@ into the USB port.
 [https://cdn-learn.adafruit.com/downloads/pdf/adafruit-fona-mini-gsm-gprs-cellular-phone-module.pdf](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-fona-mini-gsm-gprs-cellular-phone-module.pdf)
 
 ## Installation
+
 1. Log in to your rasperry pi as the `pi` user.
 1. `mkdir src`
 1. `cd src`
@@ -266,4 +270,4 @@ into the USB port.
 1. `sudo systemctl enable piWarmer.service`
 1. `sudo reboot`
 
-Once you reboot, the piWarmer service should be started automatically.  You can view any startup errors for the service in `/var/log/syslog`.
+Once you reboot, the piWarmer service should be started automatically. You can view any startup errors for the service in `/var/log/syslog`.
