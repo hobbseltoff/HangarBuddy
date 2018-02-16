@@ -2,8 +2,8 @@
 
 # encoding: UTF-8
 
+import json
 from ConfigParser import SafeConfigParser
-import lib.local_debug as local_debug
 
 # read in configuration settings
 
@@ -84,13 +84,24 @@ class ConfigurationItem(object):
         Sets the value.
         """
         self.__value__ = new_value
-        self.__config__.set(self.__section_name__, self.__key_name__, self.__value__)
 
+        str_value = str(new_value)
+
+        # Make sure phone numbers get converted properly
+        if isinstance(new_value, list):
+            str_value = ""
+            for item in new_value:
+                str_value += item + ","
+            
+            str_value = str_value[:len(str_value) - 1]
+
+        self.__config__.set(self.section_name,
+                            self.key_name, str_value)
 
     def __init__(self, config_parser, section_name, key_name, default_value=None):
         self.__config__ = config_parser
-        self.__section_name__ = section_name
-        self.__key_name__ = key_name
+        self.section_name = section_name
+        self.key_name = key_name
         self.__value__ = default_value
 
         if config_parser is not None:
@@ -105,21 +116,69 @@ class Configuration(object):
     Object to handle configuration of the HangarBuddy.
     """
 
-    def write(self):
-        with open(get_config_file_location(), 'w') as configfile:    # save
+    def write_with_location(self, file_location):
+        """
+        Writes the config file to the given locaiton.
+        """
+
+        with open(file_location, 'w') as configfile:
             self.__config_parser__.write(configfile)
+
+    def write(self):
+        self.write_with_location(get_config_file_location())
+
+    def get_json_from_text(self, text):
+        """
+        Takes raw text and imports it into JSON.
+        """
+
+        return json.loads(text)
+    
+    def get_json_from_config(self):
+        """
+        Returns the current config as JSON text.
+
+        REMARK: Returns everything back as a string...
+                That is probably safer, but not nearly
+                as convient as I want
+        """
+        config_dictionary = {s:dict(self.__config_parser__.items(s)) for s in self.__config_parser__.sections()}
+
+        return json.dumps(config_dictionary)
+
+    def set_from_json(self, json_config):
+        """
+        Takes a JSON package and sets the config using the JSON
+        """
+
+        if json_config is None:
+            return
+
+        for config_item in self.configuration_items:
+            try:
+                if config_item.section_name in json_config and config_item.key_name in json_config[config_item.section_name]:
+                    config_item.set(
+                        json_config[config_item.section_name.upper()][config_item.key_name.upper()])
+            except:
+                pass
 
     def get_log_directory(self):
         """ returns the location of the logfile to use. """
 
-        if local_debug.is_debug():
-            return self.__config_parser__.get('SETTINGS', 'DEBUGGING_LOGFILE_DIRECTORY')
-
-        return self.__config_parser__.get('SETTINGS', 'LOGFILE_DIRECTORY')
+        return self.logfile_directory.get()
 
     def __init__(self):
         self.__config_parser__ = SafeConfigParser()
+        # Keep the capitalization of the
+        # key names in the .INI
+        self.__config_parser__.optionxform = str
         self.__config_parser__.read(get_config_file_location())
+
+        self.logfile_directory = ConfigurationItem(
+            self.__config_parser__,
+            'SETTINGS', 'LOGFILE_DIRECTORY',
+            './'
+        )
 
         # Sets the port for the serial connection of the Fona on USB.
         # NOTE: Requires a software restart.
@@ -224,7 +283,23 @@ class Configuration(object):
             'False'
         )
 
+        self.configuration_items = [self.allowed_phone_numbers, self.utc_offset, self.maximum_message_age,
+                                self.max_heater_timer, self.logfile_directory,
+                                self.fona_serial_port, self.fona_baud_rate,
+                                self.fona_power_status_pin, self.fona_ring_indicator_pin,
+                                self.relay_control_pin, self.hangar_dark_threshold,
+                                self.hangar_dim_threshold, self.hangar_lit_threshold,
+                                self.test_mode]
+
         self.log_filename = self.get_log_directory() + "hangar_buddy.log"
+
+    def load_config_from_json_file(self, input_filepath, output_settings_file):
+        with open(input_filepath) as json_config_file:
+            json_config_text = json_config_file.read()
+            json = self.get_json_from_text(json_config_text)
+            self.set_from_json(json)
+
+            self.write_with_location(output_settings_file)
 
 
 ##################
@@ -250,4 +325,12 @@ if __name__ == '__main__':
     import doctest
 
     doctest.testmod()
+
+    # Exercise the INI -> JSON -> INI -> JSON code
+    config_from_json = Configuration()
+    config_from_json.load_config_from_json_file('test/config.json', 'test/from_json.config')
+    config_from_json.load_config_from_json_file('test/config_updated.json', 'test/updated_from_json.config')
+
+    with open('test/update_config_output.json', 'w') as configfile:
+        configfile.write(config_from_json.get_json_from_config())
 

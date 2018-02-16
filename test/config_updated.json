@@ -1,0 +1,12 @@
+{
+  "SETTINGS": {
+    "ALLOWED_PHONE_NUMBERS": ["2067654321", "6021234567"],
+    "UTC_OFFSET": 7,
+    "OLDEST_MESSAGE_TO_PROCESS": 120,
+    "MAX_HEATER_TIME": 100,
+    "LOGFILE_DIRECTORY": "./test/",
+    "SERIAL_PORT": "/dev/ttyUSB1",
+    "BAUDRATE": 1200,
+    "TEST_MODE": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "SETTINGS": {
+    "ALLOWED_PHONE_NUMBERS": ["2061234567"],
+    "UTC_OFFSET": 8,
+    "OLDEST_MESSAGE_TO_PROCESS": 60,
+    "MAX_HEATER_TIME": 90,
+    "LOGFILE_DIRECTORY": "./",
+    "SERIAL_PORT": "/dev/ttyUSB0",
+    "BAUDRATE": 9600,
+    "POWER_STATUS_PIN": 16,
+    "RING_INDICATOR_PIN": 18,
+    "HEATER_PIN": 22,
+    "HANGAR_DARK": 20,
+    "HANGAR_DIM": 60,
+    "HANGAR_LIT": 90,
+    "TEST_MODE": false
+  }
+}
