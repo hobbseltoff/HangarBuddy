@@ -6,6 +6,11 @@ import json
 from ConfigParser import SafeConfigParser
 
 # read in configuration settings
+# $TODO - Add a name to each phone number so we can track who it is.
+# $TODO - For response that contain a phone number, use the friendly name instead
+# $TODO - More finely tune control of the numbers the response is sent to.
+# $TODO - Move config over fully to JSON
+# $TODO - Handle "no phone numbers in config" scenario for setup/new device
 
 
 def get_config_file_location():

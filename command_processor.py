@@ -21,6 +21,7 @@ import lib.utilities as utilities
 import lib.local_debug as local_debug
 from lib.logger import Logger
 from lib.sf_1602_lcd import LcdDisplay
+import restful_host
 
 # Build a list of the valid commanhds so
 # the CommandProcessor can know what to
@@ -99,6 +100,10 @@ class CommandProcessor(object):
 
         RecurringTask("update_lcd", 5, self.__update_lcd__, self.__logger__)
 
+        web_server = restful_host.HangarBuddyServer()
+        restful_host.CONFIGURATION = self.__configuration__
+        restful_host.COMMAND_PROCESSOR = self
+
         # The main service loop
         while True:
             self.__run_servicer__(self.__service_gas_sensor_queue__,
@@ -106,6 +111,7 @@ class CommandProcessor(object):
             self.__relay_controller__.update()
             self.__run_servicer__(self.__process_pending_text_messages__,
                                   "Incoming request queue")
+            self.__run_servicer__(web_server.run, "rest_host")
             self.__fona_manager__.update()
 
     def is_gas_detected(self):
@@ -175,8 +181,8 @@ class CommandProcessor(object):
 
         self.__logger__.log_info_message("Begin monitoring for SMS messages")
         self.__queue_message_to_all_numbers__("HangarBuddy monitoring started."
-                                              + "\n" + self.__get_help_status__())
-        self.__queue_message_to_all_numbers__(self.__get_full_status__())
+                                              + "\n" + self.get_help_status())
+        self.__queue_message_to_all_numbers__(self.get_full_status())
         self.__lcd__.clear()
         self.__lcd__.write(0, 0, "Ready")
 
@@ -202,7 +208,7 @@ class CommandProcessor(object):
     #--- Status builders
     ##############################
 
-    def __get_heater_status__(self):
+    def get_heater_status(self):
         """
         Returns the status of the heater/relay.
         """
@@ -221,7 +227,7 @@ class CommandProcessor(object):
 
         return status_text
 
-    def __get_fona_status__(self):
+    def get_cell_status(self):
         """
         Returns the status of the Fona.
         ... both the signal and battery ...
@@ -242,7 +248,7 @@ class CommandProcessor(object):
 
         return status
 
-    def __get_gas_sensor_status__(self):
+    def get_gas_sensor_status(self):
         """
         Returns the status text for the gas sensor.
         """
@@ -259,7 +265,7 @@ class CommandProcessor(object):
 
         return status_text
 
-    def __get_temp_probe_status__(self):
+    def get_temperature_status(self):
         """
         Returns the status of the temperature probe.
         """
@@ -270,7 +276,7 @@ class CommandProcessor(object):
 
         return "Temp probe not enabled."
 
-    def __get_uptime_status__(self):
+    def get_uptime_status(self):
         """
         Gets how long the system has been up.
         """
@@ -279,7 +285,7 @@ class CommandProcessor(object):
                   self.__system_start_time__).total_seconds()
         return utilities.get_time_text(uptime)
 
-    def __get_light_status__(self):
+    def get_light_status(self):
         """
         Classifies the hangar brightness.
         """
@@ -307,25 +313,25 @@ class CommandProcessor(object):
 
         return "Light sensor not enabled."
 
-    def __get_full_status__(self):
+    def get_full_status(self):
         """
         Returns the status of the HangarBuddy.
         This is the full status text.
         """
 
         try:
-            status = self.__get_heater_status__() + "\n"
-            status += self.__get_gas_sensor_status__() + "\n"
-            status += self.__get_light_status__() + "\n"
-            status += self.__get_temp_probe_status__() + "\n"
-            status += self.__get_fona_status__() + "\n"
-            status += self.__get_uptime_status__()
+            status = self.get_heater_status() + "\n"
+            status += self.get_gas_sensor_status() + "\n"
+            status += self.get_light_status() + "\n"
+            status += self.get_temperature_status() + "\n"
+            status += self.get_cell_status() + "\n"
+            status += self.get_uptime_status()
         except:
             status += "ERROR"
 
         return status
 
-    def __get_help_status__(self):
+    def get_help_status(self):
         """
         Returns the message for help.
         Uses the list of valid commands to build
@@ -448,7 +454,7 @@ class CommandProcessor(object):
         self.__logger__.log_info_message(
             "Received STATUS request from " + phone_number)
 
-        return CommandResponse(text.FULL_STATUS_COMMAND, self.__get_full_status__())
+        return CommandResponse(text.FULL_STATUS_COMMAND, self.get_full_status())
 
     def __handle_help_request__(self, phone_number):
         """
@@ -457,14 +463,14 @@ class CommandProcessor(object):
         self.__logger__.log_info_message(
             "Received HELP request from " + phone_number)
 
-        return CommandResponse(text.HELP_COMMAND, self.__get_help_status__())
+        return CommandResponse(text.HELP_COMMAND, self.get_help_status())
 
     def __handle_uptime_request__(self, phone_number):
         """
         Handle a request for system stats.
         """
 
-        return CommandResponse(text.UPTIME_COMMAND, self.__get_uptime_status__())
+        return CommandResponse(text.UPTIME_COMMAND, self.get_uptime_status())
 
     def __handle_quit_request__(self, phone_number):
         """
@@ -478,28 +484,28 @@ class CommandProcessor(object):
         Handle a request to find out about any gas in the hangar.
         """
 
-        return CommandResponse(text.GAS_COMMAND, self.__get_gas_sensor_status__())
+        return CommandResponse(text.GAS_COMMAND, self.get_gas_sensor_status())
 
     def __handle_temperature_request__(self, phone_number):
         """
         Handle a reest to find out the temperature.
         """
 
-        return CommandResponse(text.TEMPERATURE_COMMAND, self.__get_temp_probe_status__())
+        return CommandResponse(text.TEMPERATURE_COMMAND, self.get_temperature_status())
 
     def __handle_cell_status_request__(self, phone_number):
         """
         Handle a request to find out the cell/fona status.
         """
 
-        return CommandResponse(text.CELL_STATUS_COMMAND, self.__get_fona_status__())
+        return CommandResponse(text.CELL_STATUS_COMMAND, self.get_cell_status())
 
     def __handle_lights_request__(self, phone_number):
         """
         Handle a request to know the status of the lights.
         """
 
-        return CommandResponse(text.LIGHTS_COMMAND, self.__get_light_status__())
+        return CommandResponse(text.LIGHTS_COMMAND, self.get_light_status())
 
     def __handle_shutdown_request__(self, phone_number):
         """
@@ -545,7 +551,7 @@ class CommandProcessor(object):
             if command.upper() in cleansed_message:
                 return command_handlers[command](phone_number)
 
-        return CommandResponse(text.HELP_COMMAND, "INVALID COMMAND\n" + self.__get_help_status__())
+        return CommandResponse(text.HELP_COMMAND, "INVALID COMMAND\n" + self.get_help_status())
 
     def __handle_gas_ok__(self, gas_sensor_status):
         """
@@ -638,8 +644,9 @@ class CommandProcessor(object):
             return True
 
         return False
+    
 
-    def __process_message__(self, message, phone_number):
+    def process_message(self, message, phone_number):
         """
         Process a SMS message/command.
         """
@@ -787,29 +794,29 @@ class CommandProcessor(object):
         # interval in given to RecurringEvent (Normally 5 seconds)
         try:
             if self.__lcd_status_id__ == 0:
-                self.__lcd__.write_text(self.__get_fona_status__())
+                self.__lcd__.write_text(self.get_cell_status())
             if self.__lcd_status_id__ == 1:
-                self.__lcd__.write_text(self.__get_heater_status__())
+                self.__lcd__.write_text(self.get_heater_status())
             if self.__lcd_status_id__ == 2:
                 if self.__sensors__.current_gas_sensor_reading is not None:
-                    self.__lcd__.write_text(self.__get_gas_sensor_status__())
+                    self.__lcd__.write_text(self.get_gas_sensor_status())
                 else:
                     self.__lcd_status_id__ += 1
             if self.__lcd_status_id__ == 3:
                 if self.__sensors__.current_light_sensor_reading is not None \
                         and self.__sensors__.current_light_sensor_reading.enabled:
-                    self.__lcd__.write_text(self.__get_light_status__())
+                    self.__lcd__.write_text(self.get_light_status())
                 else:
                     self.__lcd_status_id__ += 1
             if self.__lcd_status_id__ == 4:
                 if self.__sensors__.current_temperature_sensor_reading is not None:
-                    self.__lcd__.write_text(self.__get_temp_probe_status__())
+                    self.__lcd__.write_text(self.get_temperature_status())
                 else:
                     self.__lcd_status_id__ += 1
             if self.__lcd_status_id__ >= 5:
                 self.__lcd_status_id__ = -1
                 self.__lcd__.write_text(
-                    "UPTIME:\n" + self.__get_uptime_status__())
+                    "UPTIME:\n" + self.get_uptime_status())
         except:
             self.__lcd__.write(0, 0, "ERROR: LCD_ID=" +
                                str(self.__lcd_status_id__))
@@ -938,7 +945,7 @@ class CommandProcessor(object):
                     self.__queue_message_to_all_numbers__(old_message)
                     continue
 
-                response, state_changed = self.__process_message__(
+                response, state_changed = self.process_message(
                     message.message_text, message.sender_number)
                 self.__logger__.log_info_message(response)
 
