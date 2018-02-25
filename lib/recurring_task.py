@@ -57,9 +57,9 @@ class RecurringTask(object):
                 self.__logger__.info(error_mesage)
 
         if self.__is_running__:
-            threading.Timer(int(self.__task_interval__), self.__run_task__).start()
+            threading.Timer(int(self.__task_interval__), self.start).start()
 
-    def __init__(self, task_name, task_interval, task_callback, logger=None):
+    def __init__(self, task_name, task_interval, task_callback, logger=None, start_immediate=True):
         """
         Creates a new reocurring task.
         The call back is called at the given time schedule.
@@ -71,7 +71,11 @@ class RecurringTask(object):
         self.__logger__ = logger
         self.__is_running__ = False
 
-        self.start()
+        if start_immediate:
+            self.start()
+        else:
+            threading.Timer(int(self.__task_interval__), self.start).start()
+
 
 class timer_test(object):
     def __init__(self):

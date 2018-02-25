@@ -104,6 +104,8 @@ class CommandProcessor(object):
         restful_host.CONFIGURATION = self.__configuration__
         restful_host.COMMAND_PROCESSOR = self
 
+        RecurringTask("rest_host", 0.1, web_server.run, start_immediate=False)
+
         # The main service loop
         while True:
             self.__run_servicer__(self.__service_gas_sensor_queue__,
@@ -111,7 +113,6 @@ class CommandProcessor(object):
             self.__relay_controller__.update()
             self.__run_servicer__(self.__process_pending_text_messages__,
                                   "Incoming request queue")
-            self.__run_servicer__(web_server.run, "rest_host")
             self.__fona_manager__.update()
 
     def is_gas_detected(self):
